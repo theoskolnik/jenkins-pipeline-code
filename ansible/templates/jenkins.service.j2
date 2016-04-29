@@ -1,0 +1,9 @@
+[Unit]
+Description=Jenkins Daemon
+
+[Service]
+ExecStart=/usr/bin/java -DJENKINS_HOME={{jenkins_home}} -Djenkins.install.runSetupWizard=false -jar {{jenkins_user_home}}/jenkins.war
+User={{jenkins_user}}
+
+[Install]
+WantedBy=multi-user.target

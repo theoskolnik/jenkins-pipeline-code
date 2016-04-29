@@ -1,0 +1,9 @@
+- name: "restart service"
+  service: name=jenkins state=restarted
+
+- name: "wait for jenkins start"
+  shell: curl --head --silent {{jenkins_base_url}}/cli/
+  register: result
+  until: result.stdout.find("200 OK") != -1
+  retries: 10
+  delay: 10

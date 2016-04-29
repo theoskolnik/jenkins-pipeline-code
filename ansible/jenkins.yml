@@ -1,0 +1,98 @@
+- hosts: all
+  become: yes
+  become_method: sudo
+  vars:
+    jenkins_user: "jenkins"
+    jenkins_user_home: "/home/{{jenkins_user}}"
+    jenkins_war_url: "http://mirrors.jenkins-ci.org/war/2.0/jenkins.war"
+    jenkins_war_checksum: "sha256:c883c58ba57a70371f60c44c74341e0d511f330e84c13a2499368a02ae11dd97"
+    jenkins_home: "{{jenkins_user_home}}/jenkins_home"
+    jenkins_port: '8080'
+    jenkins_base_url: 'http://localhost:{{jenkins_port}}'
+    jenkins_users:
+    - { name: 'admin', password: 'admin', root: 'true' }
+    jenkins_organization_folders:
+    - { name: "job1",
+        organization: 'pellepelster'
+      }
+    jenkins_plugins:
+      - "workflow-aggregator"
+  tasks:
+
+    - set_fact:
+        jenkins_root_user="{{ jenkins_users | selectattr("root", "equalto", "true") | map(attribute='name') | join(',') }}"
+        jenkins_root_password="{{ jenkins_users | selectattr("root", "equalto", "true") | map(attribute='password') | join(',') }}"
+
+    - debug: msg="using '{{ jenkins_root_user }}' as jenkis root user"
+
+    - name: "install java8"
+      apt: name=openjdk-8-jre update_cache=yes cache_valid_time=3600
+
+    - name: "create jenkins user"
+      user: name={{jenkins_user}} comment="jenkins user" home={{jenkins_user_home}}
+
+    - name: "create jenkins home"
+      file: path={{jenkins_home}} state=directory owner={{jenkins_user}} group={{jenkins_user}}
+
+    - name: "download jenkins war"
+      get_url:
+        url="{{jenkins_war_url}}" dest="{{jenkins_user_home}}/jenkins.war"
+        owner={{jenkins_user}} group={{jenkins_user}} mode=0555
+        checksum="{{jenkins_war_checksum}}"
+
+    - name: "create systemd service"
+      template: src=templates/jenkins.service.j2 dest=/etc/systemd/system/jenkins.service
+
+    - name: "create jenkins config"
+      template: src=templates/config.xml.j2 dest="{{jenkins_home}}/config.xml"
+
+    - name: "create jenkins users dirs"
+      file: path={{jenkins_home}}/users/{{item.name}} state=directory owner={{jenkins_user}} group={{jenkins_user}}
+      with_items: "{{jenkins_users}}"
+
+    - name: "install ruby"
+      apt: name=ruby
+
+    - name: "install ruby-dev"
+      apt: name=ruby-dev
+
+    - name: "install make"
+      apt: name=make
+
+    - name: "install gcc"
+      apt: name=gcc
+
+    - name: "install bcrpyt gem"
+      shell: "gem install bcrypt"
+
+    - shell: "echo \"require 'bcrypt'; puts BCrypt::Password.create('{{item.password}}')\" | irb --noverbose --noecho"
+      with_items: "{{jenkins_users}}"
+      register: jenkins_users_passwords
+
+    - name: "create root jenkins user"
+      template: src=templates/user.config.xml.j2 dest="{{jenkins_home}}/users/{{item.0.name}}/config.xml"
+      with_together:
+        - "{{jenkins_users}}"
+        - "{{jenkins_users_passwords.results}}"
+      when: item.0.root == 'true'
+
+    - name: "create organization folder job dirs"
+      file: path={{jenkins_home}}/jobs/{{item.name}} state=directory owner={{jenkins_user}} group={{jenkins_user}}
+      with_items: "{{jenkins_organization_folders}}"
+
+    - name: "create organization folder jobs"
+      template: src=templates/organization_folder.xml.j2 dest="{{jenkins_home}}/jobs/{{item.name}}/config.xml"
+      with_items: "{{jenkins_organization_folders}}"
+
+    - include: tasks/restart_jenkins.yml
+
+    - name: "download jenkins cli"
+      get_url:
+        url="{{jenkins_base_url}}/jnlpJars/jenkins-cli.jar" dest="{{jenkins_user_home}}/jenkins-cli.jar"
+        owner={{jenkins_user}} group={{jenkins_user}} mode=0555
+
+    - name: "installing plugins"
+      shell: "java -jar {{jenkins_user_home}}/jenkins-cli.jar -s {{jenkins_base_url}} install-plugin --username {{jenkins_root_user}} --password {{jenkins_root_password}} {{item}}"
+      with_items: "{{ jenkins_plugins }}"
+
+    - include: tasks/restart_jenkins.yml
