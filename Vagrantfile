@@ -3,6 +3,7 @@ http_port = 8080
 $install_python = <<SCRIPT
 apt-get udpate
 apt-get --assume-yes install python
+apt-get --assume-yes install python-httplib2
 SCRIPT
 
 Vagrant.configure(2) do |config|
