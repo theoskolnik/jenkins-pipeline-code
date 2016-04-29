@@ -16,7 +16,25 @@
         organization: 'pellepelster'
       }
     jenkins_plugins:
+      - "ant"
+      - "antisamy-markup-formatter"
+      - "build-timeout"
+      - "cloudbees-folder"
+      - "credentials-binding"
+      - "email-ext"
+      - "git"
+      - "gradle"
+      - "ldap"
+      - "mailer"
+      - "matrix-auth"
+      - "pam-auth"
+      - "pipeline-stage-view"
+      - "ssh-slaves"
+      - "subversion"
+      - "timestamper"
       - "workflow-aggregator"
+      - "github-organization-folder"
+      - "ws-cleanup"
   tasks:
 
     - set_fact:
@@ -26,7 +44,7 @@
     - debug: msg="using '{{ jenkins_root_user }}' as jenkis root user"
 
     - name: "install java8"
-      apt: name=openjdk-8-jre update_cache=yes cache_valid_time=3600
+      apt: name=openjdk-8-jdk update_cache=yes cache_valid_time=3600
 
     - name: "create jenkins user"
       user: name={{jenkins_user}} comment="jenkins user" home={{jenkins_user_home}}

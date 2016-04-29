@@ -6,4 +6,4 @@
   register: result
   until: result.stdout.find("200 OK") != -1
   retries: 10
-  delay: 10
+  delay: 12
