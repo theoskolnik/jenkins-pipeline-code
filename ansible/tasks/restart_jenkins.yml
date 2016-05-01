@@ -2,11 +2,11 @@
   service: name=jenkins state=restarted
 
 - name: "wait for jenkins port"
-- wait_for: port={{jenkins_port}}
+  wait_for: port={{jenkins_port}}
 
 - name: "wait for jenkins start"
   uri: url="{{jenkins_base_url}}/cli/"
   register: result
   until: result.status == 200
   retries: 10
-  delay: 10
+  delay: 15

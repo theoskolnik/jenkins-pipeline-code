@@ -1,19 +1,21 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<jenkins.branch.OrganizationFolder plugin="branch-api@1.6">
+<jenkins.branch.OrganizationFolder plugin="branch-api@1.7">
   <actions>
     <org.jenkinsci.plugins.orgfolder.github.GitHubOrgAction plugin="github-organization-folder@1.3">
       <url>https://github.com/{{item.organization}}</url>
+      <avatar></avatar>
     </org.jenkinsci.plugins.orgfolder.github.GitHubOrgAction>
     <org.jenkinsci.plugins.orgfolder.github.GitHubLink plugin="github-organization-folder@1.3">
-      <image>logo</image>
+      <image></image>
       <url>https://github.com/{{item.organization}}</url>
     </org.jenkinsci.plugins.orgfolder.github.GitHubLink>
   </actions>
+  <description></description>
   <properties>
     <com.cloudbees.hudson.plugins.folder.properties.FolderCredentialsProvider_-FolderCredentialsProperty plugin="cloudbees-folder@5.9">
       <domainCredentialsMap class="hudson.util.CopyOnWriteMap$Hash">
         <entry>
-          <com.cloudbees.plugins.credentials.domains.Domain plugin="credentials@1.27">
+          <com.cloudbees.plugins.credentials.domains.Domain plugin="credentials@1.28">
             <specifications/>
           </com.cloudbees.plugins.credentials.domains.Domain>
           <java.util.concurrent.CopyOnWriteArrayList/>
@@ -22,31 +24,15 @@
     </com.cloudbees.hudson.plugins.folder.properties.FolderCredentialsProvider_-FolderCredentialsProperty>
   </properties>
   <views>
-    <hudson.model.ListView>
+    <hudson.model.AllView>
       <owner class="jenkins.branch.OrganizationFolder" reference="../../.."/>
-      <name>Repositories</name>
+      <name>All</name>
       <filterExecutors>false</filterExecutors>
       <filterQueue>false</filterQueue>
       <properties class="hudson.model.View$PropertyList"/>
-      <jobNames>
-        <comparator class="hudson.util.CaseInsensitiveComparator"/>
-      </jobNames>
-      <jobFilters/>
-      <columns>
-        <hudson.views.StatusColumn/>
-        <hudson.views.WeatherColumn/>
-        <org.jenkinsci.plugins.orgfolder.github.CustomNameJobColumn plugin="github-organization-folder@1.3">
-          <bundle>org.jenkinsci.plugins.orgfolder.github.Messages</bundle>
-          <key>ListViewColumn.Repository</key>
-        </org.jenkinsci.plugins.orgfolder.github.CustomNameJobColumn>
-        <org.jenkinsci.plugins.orgfolder.github.RepositoryDescriptionColumn plugin="github-organization-folder@1.3"/>
-      </columns>
-      <includeRegex>.*</includeRegex>
-      <recurse>false</recurse>
-    </hudson.model.ListView>
+    </hudson.model.AllView>
   </views>
   <viewsTabBar class="hudson.views.DefaultViewsTabBar"/>
-  <primaryView>Repositories</primaryView>
   <healthMetrics>
     <com.cloudbees.hudson.plugins.folder.health.WorstChildHealthMetric plugin="cloudbees-folder@5.9"/>
   </healthMetrics>
@@ -66,8 +52,9 @@
   </triggers>
   <navigators>
     <org.jenkinsci.plugins.github__branch__source.GitHubSCMNavigator plugin="github-branch-source@1.6">
-      <repoOwner>pellepelster</repoOwner>
-      <checkoutCredentialsId>ANONYMOUS</checkoutCredentialsId>
+      <repoOwner>{{item.organization}}</repoOwner>
+      <scanCredentialsId>{{item.organization}}</scanCredentialsId>
+      <checkoutCredentialsId>SAME</checkoutCredentialsId>
       <pattern>.*</pattern>
     </org.jenkinsci.plugins.github__branch__source.GitHubSCMNavigator>
   </navigators>

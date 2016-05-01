@@ -12,8 +12,9 @@
     jenkins_users:
     - { name: 'admin', password: 'admin', root: 'true' }
     jenkins_organization_folders:
-    - { name: "job1",
-        organization: 'pellepelster'
+    - { name: "github-organization-folder",
+        organization: 'jenkins-pipeline-code',
+        api_token: "a451c21092aba074d94846056ae7009381714bff"
       }
     jenkins_plugins:
       - "ant"
@@ -61,12 +62,11 @@
     - name: "create systemd service"
       template: src=templates/jenkins.service.j2 dest=/etc/systemd/system/jenkins.service
 
+    - name: "stop service"
+      service: name=jenkins state=stopped
+
     - name: "create jenkins config"
       template: src=templates/config.xml.j2 dest="{{jenkins_home}}/config.xml"
-
-    - name: "create jenkins users dirs"
-      file: path={{jenkins_home}}/users/{{item.name}} state=directory owner={{jenkins_user}} group={{jenkins_user}}
-      with_items: "{{jenkins_users}}"
 
     - name: "install ruby"
       apt: name=ruby
@@ -87,20 +87,16 @@
       with_items: "{{jenkins_users}}"
       register: jenkins_users_passwords
 
+    - name: "create jenkins users dirs"
+      file: path={{jenkins_home}}/users/{{item.name}} state=directory owner={{jenkins_user}} group={{jenkins_user}}
+      with_items: "{{jenkins_users}}"
+
     - name: "create root jenkins user"
       template: src=templates/user.config.xml.j2 dest="{{jenkins_home}}/users/{{item.0.name}}/config.xml"
       with_together:
         - "{{jenkins_users}}"
         - "{{jenkins_users_passwords.results}}"
       when: item.0.root == 'true'
-
-    - name: "create organization folder job dirs"
-      file: path={{jenkins_home}}/jobs/{{item.name}} state=directory owner={{jenkins_user}} group={{jenkins_user}}
-      with_items: "{{jenkins_organization_folders}}"
-
-    - name: "create organization folder jobs"
-      template: src=templates/organization_folder.xml.j2 dest="{{jenkins_home}}/jobs/{{item.name}}/config.xml"
-      with_items: "{{jenkins_organization_folders}}"
 
     - include: tasks/restart_jenkins.yml
 
@@ -114,3 +110,32 @@
       with_items: "{{ jenkins_plugins }}"
 
     - include: tasks/restart_jenkins.yml
+
+    - name: "create script dir"
+      file: path={{jenkins_home}}/scripts state=directory owner={{jenkins_user}} group={{jenkins_user}}
+
+    - name: "creating credential scripts"
+      template: src=templates/create_organization_credentials.groovy.j2 dest="{{jenkins_home}}/scripts/{{item.organization}}.groovy"
+      with_items: "{{ jenkins_organization_folders }}"
+
+    - name: "executing credential scripts"
+      shell: "java -jar {{jenkins_user_home}}/jenkins-cli.jar -s {{jenkins_base_url}} groovy --username {{jenkins_root_user}} --password {{jenkins_root_password}} {{jenkins_home}}/scripts/{{item.organization}}.groovy"
+      with_items: "{{ jenkins_organization_folders }}"
+
+    - name: "create organization folder job dirs"
+      file: path={{jenkins_home}}/jobs/{{item.name}} state=directory owner={{jenkins_user}} group={{jenkins_user}}
+      with_items: "{{jenkins_organization_folders}}"
+
+    - name: "create organization folder jobs"
+      template: src=templates/organization_folder.xml.j2 dest="{{jenkins_home}}/jobs/{{item.name}}/config.xml"
+      with_items: "{{jenkins_organization_folders}}"
+
+    - include: tasks/restart_jenkins.yml
+
+    - name: "trigger initial repository scan"
+      command: "curl -X POST {{jenkins_base_url}}/job/{{item.name}}/build --user {{jenkins_root_user}}:{{jenkins_root_password}}"
+      with_items: "{{ jenkins_organization_folders }}"
+
+    - name: "trigger initial repository scan"
+      command: "curl -X POST {{jenkins_base_url}}/job/{{item.name}}/build --user {{jenkins_root_user}}:{{jenkins_root_password}}"
+      with_items: "{{ jenkins_organization_folders }}"
