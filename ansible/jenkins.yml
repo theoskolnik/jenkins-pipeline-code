@@ -83,6 +83,12 @@
     - name: "install bcrpyt gem"
       shell: "gem install bcrypt"
 
+    - name: "install docker"
+      apt: name=docker.io
+
+    - name: "start docker daemon"
+      service: name=docker state=started
+
     - shell: "echo \"require 'bcrypt'; puts BCrypt::Password.create('{{item.password}}')\" | irb --noverbose --noecho"
       with_items: "{{jenkins_users}}"
       register: jenkins_users_passwords
@@ -139,3 +145,5 @@
     - name: "trigger initial repository scan"
       command: "curl -X POST {{jenkins_base_url}}/job/{{item.name}}/build --user {{jenkins_root_user}}:{{jenkins_root_password}}"
       with_items: "{{ jenkins_organization_folders }}"
+
+
