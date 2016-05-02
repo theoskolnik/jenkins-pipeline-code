@@ -42,7 +42,7 @@
         jenkins_root_user="{{ jenkins_users | selectattr("root", "equalto", "true") | map(attribute='name') | join(',') }}"
         jenkins_root_password="{{ jenkins_users | selectattr("root", "equalto", "true") | map(attribute='password') | join(',') }}"
 
-    - debug: msg="using '{{ jenkins_root_user }}' as jenkis root user"
+    - debug: msg="using '{{ jenkins_root_user }}' as jenkins root user"
 
     - name: "install java8"
       apt: name=openjdk-8-jdk update_cache=yes cache_valid_time=3600
@@ -85,6 +85,11 @@
 
     - name: "install docker"
       apt: name=docker.io
+
+    - name: "add jenkins user to docker group"
+      user: name="{{jenkins_user}}" groups="docker"
+      notify:
+        - restart docker
 
     - name: "start docker daemon"
       service: name=docker state=started
