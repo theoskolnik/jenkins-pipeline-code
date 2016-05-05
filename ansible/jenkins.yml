@@ -68,23 +68,17 @@
     - name: "create jenkins config"
       template: src=templates/config.xml.j2 dest="{{jenkins_home}}/config.xml"
 
-    - name: "install ruby"
-      apt: name=ruby
-
-    - name: "install ruby-dev"
-      apt: name=ruby-dev
-
-    - name: "install make"
-      apt: name=make
-
-    - name: "install gcc"
-      apt: name=gcc
+    - name: Install needed packages
+      apt: pkg={{item}} state=installed
+      with_items:
+        - ruby
+        - ruby-dev
+        - make
+        - gcc
+        - docker.io
 
     - name: "install bcrpyt gem"
       shell: "gem install bcrypt"
-
-    - name: "install docker"
-      apt: name=docker.io
 
     - name: "add jenkins user to docker group"
       user: name="{{jenkins_user}}" groups="docker"
@@ -147,8 +141,6 @@
       command: "curl -X POST {{jenkins_base_url}}/job/{{item.name}}/build --user {{jenkins_root_user}}:{{jenkins_root_password}}"
       with_items: "{{ jenkins_organization_folders }}"
 
-    - name: "trigger initial repository scan"
-      command: "curl -X POST {{jenkins_base_url}}/job/{{item.name}}/build --user {{jenkins_root_user}}:{{jenkins_root_password}}"
-      with_items: "{{ jenkins_organization_folders }}"
-
-
+#    - name: "trigger initial repository scan"
+#      command: "curl -X POST {{jenkins_base_url}}/job/{{item.name}}/build --user {{jenkins_root_user}}:{{jenkins_root_password}}"
+#      with_items: "{{ jenkins_organization_folders }}"
